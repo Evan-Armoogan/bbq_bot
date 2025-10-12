@@ -9,6 +9,7 @@ from rcp import get_rcp_avgs
 from polymarket import get_2028_presidential_odds
 from zoneinfo import ZoneInfo
 from birthdays import get_nearest_birthday_str
+from random_list import RandomList, load_list
 
 # Define intents
 intents = discord.Intents.default()
@@ -291,9 +292,10 @@ async def birthday(ctx, *args):
   await ctx.send(get_nearest_birthday_str())
   return
 
+charlie_kirk_vids: RandomList = load_list("charlie_kirk_vids.txt")
 @client.command('charlie_kirk')
 async def charlie_kirk(ctx, *args):
-  await ctx.send("https://www.youtube.com/watch?v=n2ZuYzbLH4I")
+  await ctx.send(charlie_kirk_vids.next())
   return
 
 @client.event
