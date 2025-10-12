@@ -1,4 +1,6 @@
 import datetime
+from random import random
+import re
 from typing import Any
 import discord
 from discord.ext import commands, tasks
@@ -22,12 +24,93 @@ client.remove_command('help')
 
 def get_bot_key() -> str:
     with open("bot_key.secret", "r") as f:
-        return str(f.readline())
+        return str(f.readline()) 
 
 
+class PersonQuotes:
+    @staticmethod
+    def __name_in_str(name: str, quote: str) -> str:
+        return (f'{name}:' in quote or
+                f'-{name}' in quote or
+                f'- {name}' in quote)
+
+    def __init__(self, all_quotes: RandomList) -> None:
+        self.evan: RandomList | None = None
+        self.joseph: RandomList | None = None
+        self.jason: RandomList | None = None
+        self.lian_cheng: RandomList | None = None
+        self.matthew: RandomList | None = None
+        self.lucas: RandomList | None = None
+        self.aryan: RandomList | None = None
+        self.eric: RandomList | None = None
+        self.sharan: RandomList | None = None
+
+        attr = [a for a in self.__dict__.keys() if not a.startswith('__')]
+        for a in attr:
+            name = ' '.join([a.capitalize() for a in a.split('_')])
+            setattr(self, a, RandomList([quote for quote in all_quotes.items if self.__name_in_str(name, quote[0])]))
+
+    def get_quote(self, person: str) -> Any | None:
+        attr = person.lower().replace(' ', '_')
+        if attr in self.__dict__:
+            quote_list: RandomList = getattr(self, attr)
+            return quote_list.next()
+        return None
+
+
+async def read_all_quotes(client: commands.Bot) -> list[str]:
+    channel_id = 1195468205867667456  # Quotes channel
+    channel = client.get_channel(channel_id)
+    if not channel:
+        print("Channel not found. Make sure the bot can see it.")
+        return []
+
+    messages = []
+    async for message in channel.history(limit=None):
+        # Send text content
+        content = message.content or ""
+
+        # Handle attachments (images, files, etc.)
+        files = []
+        for attachment in message.attachments:
+            fp = await attachment.to_file()
+            files.append(fp)
+
+        # Handle embeds if you want (Discord limits re-sending foreign embeds)
+        embeds = message.embeds if message.embeds else []
+
+        messages.append((content, files, embeds))
+
+    print(f'Found {len(messages)} messages in the quotes channel.')
+    return messages
+
+    # # Regex: exactly three backticks, then non-backtick chars, then [int/int/int], then three backticks
+    # pattern = re.compile(r"^```[^`\[\]]+\[\d+/\d+/\d+\]```$", re.MULTILINE)
+
+    # filtered = []
+    # for msg in messages:
+    #     content = msg.content.strip()  # remove stray whitespace/newlines
+    #     if pattern.match(content):
+    #         filtered.append(msg)
+
+    # with open('test.txt', 'w', encoding='utf-8') as f:
+    #     for item in filtered:
+    #         f.write(f"{item.content}\n")
+
+    # print(f"Found {len(filtered)} matching messages.")
+    # return filtered
+
+
+quotes_list: RandomList | None = None
+person_quotes: PersonQuotes | None = None
 @client.event
 async def on_ready() -> None:
     print('We have logged in as {0.user}'.format(client))
+    # TODO: this is really bad. Ideally, the whole file should be refactored into a class
+    global quotes_list
+    global person_quotes
+    quotes_list = RandomList(await read_all_quotes(client))
+    person_quotes = PersonQuotes(quotes_list)
 
 
 def get_datetime_now() -> datetime.datetime:
@@ -133,10 +216,10 @@ async def penis(ctx: discord.ext.commands.Context, *args: str) -> None:
     await ctx.send("Bruh. That's a Joseph moment.")
 
 
-@client.command('joseph')
-async def joseph(ctx: discord.ext.commands.Context, *args: str) -> None:
-    await ctx.send('''```"Kamala Harris crashed into me"
--Joseph [9/13/24]```''')
+# @client.command('joseph')
+# async def joseph(ctx: discord.ext.commands.Context, *args: str) -> None:
+#     await ctx.send('''```"Kamala Harris crashed into me"
+# -Joseph [9/13/24]```''')
 
 
 @client.command('birthday')
@@ -148,6 +231,20 @@ charlie_kirk_vids: RandomList = load_list("charlie_kirk_vids.txt")
 @client.command('charlie_kirk')
 async def charlie_kirk(ctx: discord.ext.commands.Context, *args: str) -> None:
     await ctx.send(charlie_kirk_vids.next())
+
+
+@client.command('quote')
+async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
+    if len(args) > 0:
+        person = args[0]
+        if (quote := person_quotes.get_quote(person)) is not None:
+            content, files, embeds = quote
+            await ctx.send(content=content, files=files, embeds=embeds)
+        else:
+            await ctx.send(f'No quotes found for "{person}". Make sure to use the correct spelling and formatting.')
+    else:
+        content, files, embeds = quotes_list.next()
+        await ctx.send(content=content, files=files, embeds=embeds)
 
 
 @client.event

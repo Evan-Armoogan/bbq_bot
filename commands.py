@@ -9,10 +9,10 @@ def get_main_file_path() -> Path:
 
 
 class Commands:
-    def __init__(self, prefix) -> None:
+    def __init__(self, prefix: str) -> None:
         commands_dir = get_main_file_path().parent / 'commands'
         files = [p for p in commands_dir.glob("*") if p.is_file()]
-        self.commands = [f.stem for f in files]
+        self.commands = sorted([f.stem for f in files])
         self.command_help = {f.stem: f.read_text() for f in files}
         self.prefix = prefix
 

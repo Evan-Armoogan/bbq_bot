@@ -3,23 +3,23 @@ import random
 from typing import Any
 
 class RandomList:
-    SEQUENCE_LENGTH = 10
-
     def __init__(self, items: list = []):
         self.items = items
         self.items_used = []
+        self.SEQUENCE_LENGTH = max(1, len(items) // 2)
     
     def next(self) -> Any:
         while True:
             rand_val = random.randint(0, len(self.items) - 1)
             if self.items[rand_val] not in self.items_used:
-                if len(self.items_used) >= RandomList.SEQUENCE_LENGTH:
+                if len(self.items_used) >= self.SEQUENCE_LENGTH:
                     self.items_used.pop(0)
                 self.items_used.append(self.items[rand_val])
                 return self.items[rand_val]
 
     items: list[Any]
     items_used: list[Any]
+    SEQUENCE_LENGTH: int
 
 
 def load_list(filename: str) -> RandomList:

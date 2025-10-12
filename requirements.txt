@@ -1,4 +1,3 @@
 pandas
 discord
 requests
-beautifulsoup4
