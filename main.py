@@ -237,12 +237,18 @@ async def charlie_kirk(ctx: discord.ext.commands.Context, *args: str) -> None:
 async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
     if len(args) > 0:
         person = args[0]
+        if person_quotes is None:
+            await ctx.send("Bot still initializing...")
+            return
         if (quote := person_quotes.get_quote(person)) is not None:
             content, files, embeds = quote
             await ctx.send(content=content, files=files, embeds=embeds)
         else:
             await ctx.send(f'No quotes found for "{person}". Make sure to use the correct spelling and formatting.')
     else:
+        if quotes_list is None:
+            await ctx.send("Bot still initializing...")
+            return
         content, files, embeds = quotes_list.next()
         await ctx.send(content=content, files=files, embeds=embeds)
 
