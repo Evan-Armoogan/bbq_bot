@@ -1,0 +1,1 @@
+Returns the amount of time until the next US Presidential inauguration.

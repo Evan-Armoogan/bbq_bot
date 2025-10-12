@@ -1,0 +1,1 @@
+Gives current Polymarket betting odds for the next US Presidential election.

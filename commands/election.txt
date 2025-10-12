@@ -1,0 +1,1 @@
+Returns the time until the first polls close in the next US election.

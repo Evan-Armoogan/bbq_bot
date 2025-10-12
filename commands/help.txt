@@ -1,0 +1,1 @@
+Returns a list of commands for use on the BBQ Bot.

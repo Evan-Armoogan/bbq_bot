@@ -1,0 +1,1 @@
+Returns the amount of time until ECE '27 finishes at University of Waterloo.
