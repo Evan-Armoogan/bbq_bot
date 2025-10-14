@@ -107,7 +107,7 @@ person_quotes: PersonQuotes | None = None
 async def on_ready() -> None:
     print('We have logged in as {0.user}'.format(client))
     # Set the bot version to be publicly visible
-    client.change_presence(activity=discord.Game(name={VERSION_STR}))
+    await client.change_presence(activity=discord.Game(name=VERSION_STR))
     # TODO: this is really bad. Ideally, the whole file should be refactored into a class
     global quotes_list
     global person_quotes
