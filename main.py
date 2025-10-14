@@ -11,8 +11,15 @@ from random_list import RandomList, load_list
 from time_to import get_time_to_str
 from commands import Commands
 from leafs import get_leafs_drought_str
+from utils import get_main_file_path
+
+# TODO: This file is a disaster. So much stuff needs to be fixed I'm not
+# even going to bother listing them here. Will do later.
 
 PREFIX = '>'
+
+with open(get_main_file_path().parent / 'version', 'r', encoding='utf-8') as vf:
+    VERSION_STR = vf.readline().strip()
 
 # Define intents
 intents = discord.Intents.default()
@@ -24,7 +31,7 @@ client.remove_command('help')
 
 
 def get_bot_key() -> str:
-    with open("bot_key.secret", "r") as f:
+    with open(get_main_file_path().parent / 'bot_key.secret', 'r', encoding='utf-8') as f:
         return str(f.readline()) 
 
 
@@ -65,7 +72,7 @@ class PersonQuotes:
                 quote_list.append(quote)
 
 
-with open('quotes_channel_id.secret', 'r', encoding='utf-8') as _qc:
+with open(get_main_file_path().parent / 'quotes_channel_id.secret', 'r', encoding='utf-8') as _qc:
     QUOTES_CHANNEL_ID = int(_qc.readline().strip())
 
 async def read_all_quotes(client: commands.Bot) -> list[str]:
@@ -99,6 +106,8 @@ person_quotes: PersonQuotes | None = None
 @client.event
 async def on_ready() -> None:
     print('We have logged in as {0.user}'.format(client))
+    # Set the bot version to be publicly visible
+    client.change_presence(activity=discord.Game(name={VERSION_STR}))
     # TODO: this is really bad. Ideally, the whole file should be refactored into a class
     global quotes_list
     global person_quotes
@@ -219,7 +228,7 @@ async def birthday(ctx: discord.ext.commands.Context, *args: str) -> None:
     await ctx.send(get_nearest_birthday_str())
 
 
-charlie_kirk_vids: RandomList = load_list("charlie_kirk_vids.txt")
+charlie_kirk_vids: RandomList = load_list(get_main_file_path().parent / 'charlie_kirk_vids.txt')
 @client.command('charlie_kirk')
 async def charlie_kirk(ctx: discord.ext.commands.Context, *args: str) -> None:
     await ctx.send(charlie_kirk_vids.next())

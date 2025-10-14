@@ -1,12 +1,5 @@
 from pathlib import Path
-
-
-def get_main_file_path() -> Path:
-    import __main__
-    main_file = getattr(__main__, "__file__", None)
-    if main_file:
-        return Path(main_file).resolve()
-
+from utils import get_main_file_path
 
 class Commands:
     def __init__(self, prefix: str) -> None:
