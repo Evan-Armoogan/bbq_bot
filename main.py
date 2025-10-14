@@ -58,9 +58,11 @@ class PersonQuotes:
         return None
 
 
+with open('quotes_channel_id.secret', 'r', encoding='utf-8') as _qc:
+    QUOTES_CHANNEL_ID = int(_qc.readline().strip())
+
 async def read_all_quotes(client: commands.Bot) -> list[str]:
-    channel_id = 1195468205867667456  # Quotes channel
-    channel = client.get_channel(channel_id)
+    channel = client.get_channel(QUOTES_CHANNEL_ID)
     if not channel:
         print("Channel not found. Make sure the bot can see it.")
         return []
@@ -83,22 +85,6 @@ async def read_all_quotes(client: commands.Bot) -> list[str]:
 
     print(f'Found {len(messages)} messages in the quotes channel.')
     return messages
-
-    # # Regex: exactly three backticks, then non-backtick chars, then [int/int/int], then three backticks
-    # pattern = re.compile(r"^```[^`\[\]]+\[\d+/\d+/\d+\]```$", re.MULTILINE)
-
-    # filtered = []
-    # for msg in messages:
-    #     content = msg.content.strip()  # remove stray whitespace/newlines
-    #     if pattern.match(content):
-    #         filtered.append(msg)
-
-    # with open('test.txt', 'w', encoding='utf-8') as f:
-    #     for item in filtered:
-    #         f.write(f"{item.content}\n")
-
-    # print(f"Found {len(filtered)} matching messages.")
-    # return filtered
 
 
 quotes_list: RandomList | None = None
