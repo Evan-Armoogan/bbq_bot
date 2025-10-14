@@ -17,6 +17,10 @@ class RandomList:
                 self.items_used.append(self.items[rand_val])
                 return self.items[rand_val]
 
+    def append(self, item: Any) -> None:
+        self.items.append(item)
+        self.SEQUENCE_LENGTH = max(1, len(self.items) // 2)
+
     items: list[Any]
     items_used: list[Any]
     SEQUENCE_LENGTH: int

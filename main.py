@@ -57,6 +57,12 @@ class PersonQuotes:
             return quote_list.next()
         return None
 
+    def append(self, quote: Any) -> None:
+        for attr in self.__dict__:
+            if self.__name_in_str(attr.replace('_', ' ').title(), quote[0]):
+                quote_list: RandomList = getattr(self, attr)
+                quote_list.append(quote)
+
 
 with open('quotes_channel_id.secret', 'r', encoding='utf-8') as _qc:
     QUOTES_CHANNEL_ID = int(_qc.readline().strip())
@@ -237,6 +243,20 @@ async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
             return
         content, files, embeds = quotes_list.next()
         await ctx.send(content=content, files=files, embeds=embeds)
+
+
+@client.event
+async def on_message(message: discord.Message) -> None:
+    if message.author == client.user:
+        return
+
+    if message.channel.id == QUOTES_CHANNEL_ID:
+        quote = (message.content, message.attachments, message.embeds)
+        quotes_list.append(quote)
+        person_quotes.append(quote)
+        print(quote)
+
+    await client.process_commands(message)
 
 
 @client.event
