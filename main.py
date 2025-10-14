@@ -219,8 +219,7 @@ async def penis(ctx: discord.ext.commands.Context, *args: str) -> None:
 
 @client.command('joseph')
 async def joseph(ctx: discord.ext.commands.Context, *args: str) -> None:
-    await ctx.send('''```"Kamala Harris crashed into me"
--Joseph [9/13/24]```''')
+    await ctx.send('```Kamala Harris crashed into me\n-Joseph [9/13/24]```')
 
 
 @client.command('birthday')
@@ -254,7 +253,7 @@ async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
         await ctx.send(content=content, files=files, embeds=embeds)
 
 
-@client.command(name="leafs")
+@client.command(name='leafs')
 async def leafs_cmd(ctx: commands.Context) -> None:
     await ctx.send(get_leafs_drought_str())
 
