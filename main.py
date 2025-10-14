@@ -10,6 +10,7 @@ from birthdays import get_nearest_birthday_str
 from random_list import RandomList, load_list
 from time_to import get_time_to_str
 from commands import Commands
+from leafs import get_leafs_drought_str
 
 PREFIX = '>'
 
@@ -208,10 +209,9 @@ async def penis(ctx: discord.ext.commands.Context, *args: str) -> None:
     await ctx.send("Bruh. That's a Joseph moment.")
 
 
-# @client.command('joseph')
-# async def joseph(ctx: discord.ext.commands.Context, *args: str) -> None:
-#     await ctx.send('''```"Kamala Harris crashed into me"
-# -Joseph [9/13/24]```''')
+@client.command('joseph')
+async def joseph(ctx: discord.ext.commands.Context, *args: str) -> None:
+    await ctx.send('```Kamala Harris crashed into me\n-Joseph [9/13/24]```')
 
 
 @client.command('birthday')
@@ -243,6 +243,11 @@ async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
             return
         content, files, embeds = quotes_list.next()
         await ctx.send(content=content, files=files, embeds=embeds)
+
+
+@client.command(name='leafs')
+async def leafs_cmd(ctx: commands.Context) -> None:
+    await ctx.send(get_leafs_drought_str())
 
 
 @client.event

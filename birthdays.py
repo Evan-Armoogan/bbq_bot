@@ -5,8 +5,11 @@ from time_to import get_time_to_str
 BIRTHDAYS_DICT: dict[str, datetime] = {
     "Matthew": datetime(2004, 2, 1),
     "Joseph": datetime(2004, 3, 2),
-    # lucas: apr something i forgot 💀 
+    "Lucas": datetime(2003, 4, 8),
     "Aryan": datetime(2004, 6, 1),
+    "Lian Cheng": datetime(2004, 6, 2),
+    "Emre": datetime(2004, 6, 4),
+    "Evan": datetime(2004, 8, 1),
     "Evan": datetime(2004, 8, 3),
     "Jason": datetime(2004, 11, 3),
     "Eric": datetime(2004, 11, 19),

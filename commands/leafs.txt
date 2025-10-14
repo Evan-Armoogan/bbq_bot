@@ -1,0 +1,1 @@
+Returns how long it has been since the Leafs last won the Stanley Cup.
