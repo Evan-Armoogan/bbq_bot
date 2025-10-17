@@ -12,6 +12,7 @@ from time_to import get_time_to_str
 from commands import Commands
 from leafs import get_leafs_drought_str
 from utils import get_main_file_path
+from truth_social import TruthSocialWS
 
 # TODO: This file is a disaster. So much stuff needs to be fixed I'm not
 # even going to bother listing them here. Will do later.
@@ -73,12 +74,12 @@ class PersonQuotes:
 
 
 with open(get_main_file_path().parent / 'quotes_channel_id.secret', 'r', encoding='utf-8') as _qc:
-    QUOTES_CHANNEL_ID = int(_qc.readline().strip())
+    QUOTES_CHANNEL_ID: int = int(_qc.readline().strip())
 
 async def read_all_quotes(client: commands.Bot) -> list[str]:
     channel = client.get_channel(QUOTES_CHANNEL_ID)
     if not channel:
-        print("Channel not found. Make sure the bot can see it.")
+        print("Quotes channel not found. Make sure the bot can see it.")
         return []
 
     messages = []
@@ -103,6 +104,7 @@ async def read_all_quotes(client: commands.Bot) -> list[str]:
 
 quotes_list: RandomList | None = None
 person_quotes: PersonQuotes | None = None
+truth_social_ws: TruthSocialWS | None = None
 @client.event
 async def on_ready() -> None:
     print('We have logged in as {0.user}'.format(client))
@@ -113,6 +115,8 @@ async def on_ready() -> None:
     global person_quotes
     quotes_list = RandomList(await read_all_quotes(client))
     person_quotes = PersonQuotes(quotes_list)
+    global truth_social_ws
+    truth_social_ws = TruthSocialWS(client)
 
 
 def get_datetime_now() -> datetime.datetime:
