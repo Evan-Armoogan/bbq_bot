@@ -38,10 +38,24 @@ def get_bot_key() -> str:
 
 class PersonQuotes:
     @staticmethod
-    def __name_in_str(name: str, quote: str) -> str:
-        return (f'{name}:' in quote or
-                f'-{name}' in quote or
-                f'- {name}' in quote)
+    def __name_in_str(name: str, quote: str) -> bool:
+        """
+        Return True if `name` appears outside of quotation marks in `quote`.
+        Handles ASCII quotes and Unicode quotes (“ ” ‘ ’).
+        """
+        # All common quote characters
+        quote_chars = r'"\'“”‘’'
+        
+        # Split by any of these quotes
+        parts = re.split(f"[{quote_chars}]", quote)
+        
+        # Even indices are outside quotes
+        for i, part in enumerate(parts):
+            if i % 2 == 0:  # outside quotes
+                # Optional: word boundary to avoid partial matches
+                if re.search(rf'\b{re.escape(name)}\b', part):
+                    return True
+        return False
 
     def __init__(self, all_quotes: RandomList) -> None:
         self.evan: RandomList | None = None
