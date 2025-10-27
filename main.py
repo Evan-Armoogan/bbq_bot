@@ -171,9 +171,6 @@ async def joseph(ctx: discord.ext.commands.Context, *args: str) -> None:
 
 @client.command('birthday')
 async def birthday(ctx: discord.ext.commands.Context, *args: str) -> None:
-    if not ctx.guild:
-        await ctx.send('This command can only be used in a server.')
-        return
     if (birthday := get_nearest_birthday_str(server_contexts[ctx.guild.id].birthdays)) is None:
         await ctx.send('No birthdays found')
     else:
@@ -188,10 +185,6 @@ async def charlie_kirk(ctx: discord.ext.commands.Context, *args: str) -> None:
 
 @client.command('quote')
 async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
-    if not ctx.guild:
-        await ctx.send("This command can only be used in a server.")
-        return
-
     person_quotes = server_contexts[ctx.guild.id].person_quotes
     quotes_list = server_contexts[ctx.guild.id].quotes_list
 
