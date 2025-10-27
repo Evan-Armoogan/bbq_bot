@@ -1,0 +1,3 @@
+Gets a random quote from the #quotes channel.
+Usage: >quotes <name>
+<name> [optional] - a name (with underscores instead of spaces) of a person in the cult. If this argument is specified, a random quote from the given person will be returned.
