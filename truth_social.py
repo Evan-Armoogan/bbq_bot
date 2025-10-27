@@ -6,19 +6,23 @@ import re
 import json
 from utils import get_main_file_path
 from discord.ext import commands
+from typing import List
 
 WS_API_ENDPOINT: str = 'wss://api.synoptic.com/v1/ws'
 with open(get_main_file_path().parent / 'synoptic_api_key.secret', 'r', encoding='utf-8') as f:
     API_KEY: str = f.read().strip()
 RECONNECT_DELAY_SEC: int = 1
 
-with open(get_main_file_path().parent / 'truth_social_channel_id.secret', 'r', encoding='utf-8') as f:
-    TRUTH_SOCIAL_CHANNEL_ID: int = int(f.readline().strip())
-
-
 # run_ws_async() from https://synoptic.com/p/streams/01JEYDKB3PH1WJ1BANH2V0H9HP/reader-api
 # with minor modifications
 class TruthSocialWS:
+    def __init__(self, client: commands.Bot, truth_social_channel_ids: List[int]) -> None:
+        self.client = client
+        self.truth_social_channel_ids = truth_social_channel_ids
+        thread = threading.Thread(target=self.run_ws, daemon=True)
+        thread.start()
+        print('Truth Social WebSocket thread initialized')
+
     @staticmethod
     def parse_truth_post(message: str) -> tuple[str | None, str | None, str | None]:
         # Extract the link and type lines
@@ -67,12 +71,13 @@ class TruthSocialWS:
         return True, formatted_post
 
     async def on_truth_social_post(self, post: str) -> None:
-        channel = self.client.get_channel(TRUTH_SOCIAL_CHANNEL_ID)
-        if not channel:
-            print("Truth Social channel not found. Make sure the bot can see it.")
-            return
+        for channel_id in self.truth_social_channel_ids:
+            channel = self.client.get_channel(channel_id)
+            if not channel:
+                print("Truth Social channel not found. Make sure the bot can see it.")
+                return
 
-        await channel.send(post)
+            await channel.send(post)
 
     def schedule_truth_post(self, post: str) -> None:
         try:
@@ -122,10 +127,5 @@ class TruthSocialWS:
                 print(f"Reconnecting in {RECONNECT_DELAY_SEC} seconds...")
                 time.sleep(RECONNECT_DELAY_SEC)
 
-    def __init__(self, client: commands.Bot) -> None:
-        self.client = client
-        thread = threading.Thread(target=self.run_ws, daemon=True)
-        thread.start()
-        print('Truth Social WebSocket thread initialized')
-
     client: commands.Bot
+    truth_social_channel_ids: List[int]
