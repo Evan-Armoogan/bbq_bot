@@ -1,3 +1,6 @@
 __pycache__
 *.secret
 venv/
+
+# This folder stores static server contexts, per instance
+server_contexts/

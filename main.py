@@ -1,9 +1,6 @@
 import datetime
-from random import random
-import re
-from typing import Any
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from polymarket import get_2028_presidential_odds
 from zoneinfo import ZoneInfo
 from birthdays import get_nearest_birthday_str
@@ -13,6 +10,7 @@ from commands import Commands
 from leafs import get_leafs_drought_str
 from utils import get_main_file_path
 from truth_social import TruthSocialWS
+from server_context import ServerContext
 
 # TODO: This file is a disaster. So much stuff needs to be fixed I'm not
 # even going to bother listing them here. Will do later.
@@ -33,90 +31,34 @@ client.remove_command('help')
 
 def get_bot_key() -> str:
     with open(get_main_file_path().parent / 'bot_key.secret', 'r', encoding='utf-8') as f:
-        return str(f.readline()) 
+        return str(f.readline())
 
 
-class PersonQuotes:
-    @staticmethod
-    def __name_in_str(name: str, quote: str) -> str:
-        return (f'{name}:' in quote or
-                f'-{name}' in quote or
-                f'- {name}' in quote)
-
-    def __init__(self, all_quotes: RandomList) -> None:
-        self.evan: RandomList | None = None
-        self.joseph: RandomList | None = None
-        self.jason: RandomList | None = None
-        self.lian_cheng: RandomList | None = None
-        self.matthew: RandomList | None = None
-        self.lucas: RandomList | None = None
-        self.aryan: RandomList | None = None
-        self.eric: RandomList | None = None
-        self.sharan: RandomList | None = None
-
-        attr = [a for a in self.__dict__.keys() if not a.startswith('__')]
-        for a in attr:
-            name = ' '.join([a.capitalize() for a in a.split('_')])
-            setattr(self, a, RandomList([quote for quote in all_quotes.items if self.__name_in_str(name, quote[0])]))
-
-    def get_quote(self, person: str) -> Any | None:
-        attr = person.lower().replace(' ', '_')
-        if attr in self.__dict__:
-            quote_list: RandomList = getattr(self, attr)
-            return quote_list.next()
-        return None
-
-    def append(self, quote: Any) -> None:
-        for attr in self.__dict__:
-            if self.__name_in_str(attr.replace('_', ' ').title(), quote[0]):
-                quote_list: RandomList = getattr(self, attr)
-                quote_list.append(quote)
-
-
-with open(get_main_file_path().parent / 'quotes_channel_id.secret', 'r', encoding='utf-8') as _qc:
-    QUOTES_CHANNEL_ID: int = int(_qc.readline().strip())
-
-async def read_all_quotes(client: commands.Bot) -> list[str]:
-    channel = client.get_channel(QUOTES_CHANNEL_ID)
-    if not channel:
-        print("Quotes channel not found. Make sure the bot can see it.")
-        return []
-
-    messages = []
-    async for message in channel.history(limit=None):
-        # Send text content
-        content = message.content or ""
-
-        # Handle attachments (images, files, etc.)
-        files = []
-        for attachment in message.attachments:
-            fp = await attachment.to_file()
-            files.append(fp)
-
-        # Handle embeds if you want (Discord limits re-sending foreign embeds)
-        embeds = message.embeds if message.embeds else []
-
-        messages.append((content, files, embeds))
-
-    print(f'Found {len(messages)} messages in the quotes channel.')
-    return messages
-
-
-quotes_list: RandomList | None = None
-person_quotes: PersonQuotes | None = None
+server_contexts: dict[int, ServerContext] = {}
 truth_social_ws: TruthSocialWS | None = None
+initializing = True
 @client.event
 async def on_ready() -> None:
     print('We have logged in as {0.user}'.format(client))
     # Set the bot version to be publicly visible
     await client.change_presence(activity=discord.Game(name=VERSION_STR))
+    server_ids = [guild.id for guild in client.guilds]
+
     # TODO: this is really bad. Ideally, the whole file should be refactored into a class
-    global quotes_list
-    global person_quotes
-    quotes_list = RandomList(await read_all_quotes(client))
-    person_quotes = PersonQuotes(quotes_list)
+    global server_contexts
+    for server_id in server_ids:
+        server_contexts[server_id] = await ServerContext.create(server_id, client)
+
     global truth_social_ws
-    truth_social_ws = TruthSocialWS(client)
+    truth_social_channel_ids = [
+        x.truth_social_channel_id
+        for x in server_contexts.values()
+        if x.truth_social_channel_id is not None
+    ]
+    truth_social_ws = TruthSocialWS(client, truth_social_channel_ids)
+
+    global initializing
+    initializing = False
 
 
 def get_datetime_now() -> datetime.datetime:
@@ -229,7 +171,10 @@ async def joseph(ctx: discord.ext.commands.Context, *args: str) -> None:
 
 @client.command('birthday')
 async def birthday(ctx: discord.ext.commands.Context, *args: str) -> None:
-    await ctx.send(get_nearest_birthday_str())
+    if (birthday := get_nearest_birthday_str(server_contexts[ctx.guild.id].birthdays)) is None:
+        await ctx.send('No birthdays found')
+    else:
+        await ctx.send(birthday)
 
 
 charlie_kirk_vids: RandomList = load_list(get_main_file_path().parent / 'charlie_kirk_vids.txt')
@@ -240,22 +185,23 @@ async def charlie_kirk(ctx: discord.ext.commands.Context, *args: str) -> None:
 
 @client.command('quote')
 async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
+    person_quotes = server_contexts[ctx.guild.id].person_quotes
+    quotes_list = server_contexts[ctx.guild.id].quotes_list
+
     if len(args) > 0:
         person = args[0]
-        if person_quotes is None:
-            await ctx.send("Bot still initializing...")
-            return
         if (quote := person_quotes.get_quote(person)) is not None:
             content, files, embeds = quote
             await ctx.send(content=content, files=files, embeds=embeds)
         else:
             await ctx.send(f'No quotes found for "{person}". Make sure to use the correct spelling and formatting.')
     else:
-        if quotes_list is None:
-            await ctx.send("Bot still initializing...")
-            return
-        content, files, embeds = quotes_list.next()
-        await ctx.send(content=content, files=files, embeds=embeds)
+        next = quotes_list.next()
+        if next is None:
+            await ctx.send("No quotes available.")
+        else:
+            content, files, embeds = next
+            await ctx.send(content=content, files=files, embeds=embeds)
 
 
 @client.command(name='leafs')
@@ -267,12 +213,19 @@ async def leafs_cmd(ctx: commands.Context) -> None:
 async def on_message(message: discord.Message) -> None:
     if message.author == client.user:
         return
+    
+    if initializing:
+        await message.channel.send("Bot still initializing...")
+        return
+    
+    if message.guild is None:
+        return
 
-    if message.channel.id == QUOTES_CHANNEL_ID:
+    server_context = server_contexts[message.guild.id]
+    if message.channel.id == server_context.quotes_channel_id:
         quote = (message.content, message.attachments, message.embeds)
-        quotes_list.append(quote)
-        person_quotes.append(quote)
-        print(quote)
+        server_context.quotes_list.append(quote)
+        server_context.person_quotes.append(quote)
 
     await client.process_commands(message)
 
