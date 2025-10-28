@@ -220,7 +220,7 @@ async def settings(ctx: commands.Context, *args: str) -> None:
         return
 
     if len(args) == 0:
-        await ctx.send("Missing required arguments. Usage: >settings <setting_type> <value1>, ... <valueN>")
+        await ctx.send("Missing required arguments. Usage: >settings <setting_type> <value1> ... <valueN>")
         return
 
     await server_contexts[ctx.guild.id].update_settings(ctx, *args)

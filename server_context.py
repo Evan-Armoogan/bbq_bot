@@ -157,7 +157,6 @@ class ServerContext:
                     month = int(args[3])
                     day = int(args[4])
                     dt = datetime(year, month, day)
-                    self.birthdays[name] = dt
                 except ValueError:
                     await ctx.send('Error: Invalid date format. Please provide valid integers for year, month, and day.')
                     return
