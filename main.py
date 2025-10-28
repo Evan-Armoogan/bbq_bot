@@ -50,12 +50,7 @@ async def on_ready() -> None:
         server_contexts[server_id] = await ServerContext.create(server_id, client)
 
     global truth_social_ws
-    truth_social_channel_ids = [
-        x.truth_social_channel_id
-        for x in server_contexts.values()
-        if x.truth_social_channel_id is not None
-    ]
-    truth_social_ws = TruthSocialWS(client, truth_social_channel_ids)
+    truth_social_ws = TruthSocialWS(client, server_contexts)
 
     global initializing
     initializing = False
