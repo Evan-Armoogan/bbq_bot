@@ -5,7 +5,10 @@ import discord
 from prefix import PREFIX
 
 
-def is_valid_quote(client: commands.Bot, message: discord.Message, channel_id: int) -> bool:
+def is_valid_quote(client: commands.Bot, message: discord.Message, channel_id: int | None) -> bool:
+    if channel_id is None:
+        return False
+
     return (
         len(message.content.strip()) > 0 and
         not message.content.strip().startswith(PREFIX) and

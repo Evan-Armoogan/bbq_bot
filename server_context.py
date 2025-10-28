@@ -32,17 +32,20 @@ class UpdateSettings(IntEnum):
 class ServerContext:
     @staticmethod
     def __get_server_context_path(server_id: int, context: Contexts) -> Path:
+        path = None
         match context:
             case Contexts.TRUTH_SOCIAL_CHANNEL_ID:
-                return SERVER_CONTEXT_PATH / str(server_id) / 'truth_social_channel_id'
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'truth_social_channel_id'
             case Contexts.QUOTES_CHANNEL_ID:
-                return SERVER_CONTEXT_PATH / str(server_id) / 'quotes_channel_id'
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'quotes_channel_id'
             case Contexts.QUOTES_PEOPLE:
-                return SERVER_CONTEXT_PATH / str(server_id) / 'quotes_people'
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'quotes_people'
             case Contexts.BIRTHDAYS:
-                return SERVER_CONTEXT_PATH / str(server_id) / 'birthdays'
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'birthdays'
             case _:
                 raise ValueError('Invalid context type')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path
             
     @staticmethod
     def __read_context_file(server_id: int, context: Contexts) -> str:
