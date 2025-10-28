@@ -5,11 +5,12 @@ import discord
 from prefix import PREFIX
 
 
-def is_valid_quote(client: commands.Bot, message: discord.Message) -> bool:
+def is_valid_quote(client: commands.Bot, message: discord.Message, channel_id: int) -> bool:
     return (
         len(message.content.strip()) > 0 and
         not message.content.strip().startswith(PREFIX) and
-        not message.author.id == client.user.id
+        not message.author.id == client.user.id and
+        message.channel.id == channel_id
     )
 
 
@@ -24,7 +25,7 @@ async def read_all_quotes(client: commands.Bot, server_id: int, channel_id: int)
         # Send text content
         content = message.content or ""
 
-        if not is_valid_quote(client, message):
+        if not is_valid_quote(client, message, channel_id):
             continue
 
         # Handle attachments (images, files, etc.)

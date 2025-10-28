@@ -241,7 +241,7 @@ async def on_message(message: discord.Message) -> None:
         return
 
     server_context = server_contexts[message.guild.id]
-    if is_valid_quote(client, message):
+    if is_valid_quote(client, message, server_context.quotes_channel_id):
         quote = (message.content, message.attachments, message.embeds)
         server_context.quotes_list.append(quote)
         server_context.person_quotes.append(quote)
