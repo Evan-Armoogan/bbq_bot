@@ -145,7 +145,12 @@ class ServerContext:
                 delattr(self.person_quotes, attr)
 
     async def update_settings(self, ctx: commands.Context, *args: str) -> None:
-        setting = UpdateSettings[args[0].strip().upper()]
+        try:
+            setting = UpdateSettings[args[0].strip().upper()]
+        except KeyError:
+            valid_settings = ', '.join([s.name.lower() for s in UpdateSettings])
+            await ctx.send(f'Error: Invalid setting name "{args[0]}". Valid settings are: {valid_settings}')
+            return
         match setting:
             case UpdateSettings.BIRTHDAY_ADD:
                 if len(args) < 5:
