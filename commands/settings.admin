@@ -2,7 +2,7 @@ Allows server administrators to update bot metadata.
 The command takes different arguments depending on <setting_type>
 Usage: >settings <setting_type> ...
 <setting_type> = birthday_add:
-    Adds name's birthday with the the given date
+    Adds name's birthday with the given date
     >settings birthday_add <name> <year> <month> <day>
 <setting_type> = birthday_remove
     Removes name's birthday from the set of birthdays
