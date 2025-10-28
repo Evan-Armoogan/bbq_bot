@@ -72,7 +72,7 @@ class PersonQuotes:
 
     def insert_person(self, person: str, quotes_list: RandomList) -> None:
         attr = person.lower().replace(' ', '_')
-        name = ' '.join([a.capitalize() for a in person.split('_')])
+        name = ' '.join([a.capitalize() for a in person.replace('_', ' ').split()])
         if attr not in self.__dict__:
             quote_list = RandomList([
                 quote for quote in quotes_list.items
