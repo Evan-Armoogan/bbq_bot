@@ -235,9 +235,8 @@ async def on_message(message: discord.Message) -> None:
         return
 
     if initializing and message.content.startswith(PREFIX):
-        await message.channel.send("Bot still initializing...")
-        return
-    elif initializing:
+        if message.content.startswith(PREFIX):
+            await message.channel.send("Bot still initializing...")
         return
 
     server_context = server_contexts[message.guild.id]
