@@ -25,7 +25,7 @@ async def read_all_quotes(client: commands.Bot, server_id: int, channel_id: int)
 
     messages = []
     async for message in channel.history(limit=None):
-        # Send text content
+        # Extract text content
         content = message.content or ""
 
         if not is_valid_quote(client, message, channel_id):
