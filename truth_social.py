@@ -4,6 +4,7 @@ import threading
 import asyncio
 import re
 import json
+from server_context import ServerContext
 from utils import get_main_file_path
 from discord.ext import commands
 from typing import List
@@ -14,11 +15,11 @@ with open(get_main_file_path().parent / 'synoptic_api_key.secret', 'r', encoding
 RECONNECT_DELAY_SEC: int = 1
 
 # run_ws_async() from https://synoptic.com/p/streams/01JEYDKB3PH1WJ1BANH2V0H9HP/reader-api
-# with minor modifications
+# with modifications
 class TruthSocialWS:
-    def __init__(self, client: commands.Bot, truth_social_channel_ids: List[int]) -> None:
+    def __init__(self, client: commands.Bot, server_contexts: dict[int, ServerContext]) -> None:
         self.client = client
-        self.truth_social_channel_ids = truth_social_channel_ids
+        self.server_contexts = server_contexts
         thread = threading.Thread(target=self.run_ws, daemon=True)
         thread.start()
         print('Truth Social WebSocket thread initialized')
@@ -71,7 +72,12 @@ class TruthSocialWS:
         return True, formatted_post
 
     async def on_truth_social_post(self, post: str) -> None:
-        for channel_id in self.truth_social_channel_ids:
+        channel_ids = [
+            x.truth_social_channel_id
+            for x in self.server_contexts.values()
+            if x.truth_social_channel_id is not None
+        ]
+        for channel_id in channel_ids:
             channel = self.client.get_channel(channel_id)
             if not channel:
                 print("Truth Social channel not found. Make sure the bot can see it.")
@@ -128,4 +134,4 @@ class TruthSocialWS:
                 time.sleep(RECONNECT_DELAY_SEC)
 
     client: commands.Bot
-    truth_social_channel_ids: List[int]
+    server_contexts: dict[int, ServerContext]

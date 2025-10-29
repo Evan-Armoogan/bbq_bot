@@ -1,5 +1,6 @@
 from pathlib import Path
-from utils import get_main_file_path, read_all_quotes
+from utils import get_main_file_path
+from quotes import read_all_quotes
 from enum import IntEnum
 from random_list import RandomList
 from quotes import PersonQuotes
@@ -17,20 +18,34 @@ class Contexts(IntEnum):
     BIRTHDAYS = 4
 
 
+class UpdateSettings(IntEnum):
+    BIRTHDAY_ADD = 1
+    BIRTHDAY_REMOVE = 2
+    QUOTE_PERSON_ADD = 3
+    QUOTE_PERSON_REMOVE = 4
+    QUOTE_CHANNEL_SET = 5
+    TRUTH_CHANNEL_SET = 6
+    QUOTE_CHANNEL_REMOVE = 7
+    TRUTH_CHANNEL_REMOVE = 8
+
+
 class ServerContext:
     @staticmethod
     def __get_server_context_path(server_id: int, context: Contexts) -> Path:
+        path = None
         match context:
             case Contexts.TRUTH_SOCIAL_CHANNEL_ID:
-                return SERVER_CONTEXT_PATH / str(server_id) / 'truth_social_channel_id'
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'truth_social_channel_id'
             case Contexts.QUOTES_CHANNEL_ID:
-                return SERVER_CONTEXT_PATH / str(server_id) / 'quotes_channel_id'
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'quotes_channel_id'
             case Contexts.QUOTES_PEOPLE:
-                return SERVER_CONTEXT_PATH / str(server_id) / 'quotes_people'
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'quotes_people'
             case Contexts.BIRTHDAYS:
-                return SERVER_CONTEXT_PATH / str(server_id) / 'birthdays'
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'birthdays'
             case _:
                 raise ValueError('Invalid context type')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path
             
     @staticmethod
     def __read_context_file(server_id: int, context: Contexts) -> str:
@@ -42,7 +57,7 @@ class ServerContext:
             return ''  # Simulate empty file if it doesn't exist
         
     @staticmethod
-    def __parse_birthdays(birthdays_str: str) -> dict[str, str]:
+    def __parse_birthdays(birthdays_str: str) -> dict[str, datetime]:
         birthdays = {}
         for line in birthdays_str.splitlines():
             if line.strip() == '':
@@ -96,6 +111,132 @@ class ServerContext:
             quotes = []
 
         return cls(server_id, quotes)
+    
+    def rewrite_date_file(self) -> None:
+        path = ServerContext.__get_server_context_path(self.server_id, Contexts.BIRTHDAYS)
+        with open(path, 'w', encoding='utf-8') as f:
+            for person, date in self.birthdays.items():
+                f.write(f'{person}: {date.date().isoformat()}\n')
+    
+    def update_birthday(self, name: str, dt: datetime) -> None:
+        self.birthdays[name] = dt
+        self.rewrite_date_file()
+
+    def remove_birthday(self, name: str) -> None:
+        if name in self.birthdays:
+            del self.birthdays[name]
+            self.rewrite_date_file()
+
+    def rewrite_quotes_file(self) -> None:
+        path = ServerContext.__get_server_context_path(self.server_id, Contexts.QUOTES_PEOPLE)
+        with open(path, 'w', encoding='utf-8') as f:
+            for person in self.quotes_people:
+                f.write(f'{person}\n')
+
+    def update_quotes_people(self, name: str) -> None:
+        if name not in self.quotes_people:
+            self.quotes_people.append(name)
+            self.rewrite_quotes_file()
+            self.person_quotes.insert_person(name, self.quotes_list)
+
+    def remove_quotes_people(self, name: str) -> None:
+        if name in self.quotes_people:
+            self.quotes_people.remove(name)
+            self.rewrite_quotes_file()
+            attr = name.lower().replace(' ', '_')
+            if attr in self.person_quotes.__dict__:
+                delattr(self.person_quotes, attr)
+
+    async def update_settings(self, ctx: commands.Context, *args: str) -> None:
+        try:
+            setting = UpdateSettings[args[0].strip().upper()]
+        except KeyError:
+            valid_settings = ', '.join([s.name.lower() for s in UpdateSettings])
+            await ctx.send(f'Error: Invalid setting name "{args[0]}". Valid settings are: {valid_settings}')
+            return
+        match setting:
+            case UpdateSettings.BIRTHDAY_ADD:
+                if len(args) < 5:
+                    await ctx.send('Usage: >settings birthday_add <name> <year> <month> <day>')
+                    return
+                name = args[1]
+                try:
+                    year = int(args[2])
+                    month = int(args[3])
+                    day = int(args[4])
+                    dt = datetime(year, month, day)
+                except ValueError:
+                    await ctx.send('Error: Invalid date format. Please provide valid integers for year, month, and day.')
+                    return
+                
+                self.update_birthday(name, dt)
+                await ctx.send(f'Birthday for {name} added/updated to {dt.date().isoformat()}.')
+
+            case UpdateSettings.BIRTHDAY_REMOVE:
+                if len(args) < 2:
+                    await ctx.send('Usage: >settings birthday_remove <name>')
+                    return
+                name = args[1]
+                self.remove_birthday(name)
+                await ctx.send(f'Birthday for {name} removed.')
+
+            case UpdateSettings.QUOTE_PERSON_ADD:
+                if len(args) < 2:
+                    await ctx.send('Usage: >settings quote_person_add <name>')
+                    return
+                name = args[1]
+                self.update_quotes_people(name)
+                await ctx.send(f'Quote person "{name}" added.')
+
+            case UpdateSettings.QUOTE_PERSON_REMOVE:
+                if len(args) < 2:
+                    await ctx.send('Usage: >settings quote_person_remove <name>')
+                    return
+                name = args[1]
+                self.remove_quotes_people(name)
+                await ctx.send(f'Quote person "{name}" removed.')
+
+            case UpdateSettings.QUOTE_CHANNEL_SET:
+                if self.quotes_channel_id == ctx.channel.id:
+                    await ctx.send(f'Quotes channel is already set to #{ctx.channel.name}')
+                    return
+
+                self.quotes_channel_id = ctx.channel.id
+                path = ServerContext.__get_server_context_path(self.server_id, Contexts.QUOTES_CHANNEL_ID)
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(str(self.quotes_channel_id))
+                await ctx.send('Loading quotes from the new channel, please wait...')
+                self.quotes_list = RandomList(await read_all_quotes(ctx.bot, self.server_id, self.quotes_channel_id))
+                print(f'Server {self.server_id} - Loaded {len(self.quotes_list.items)} quotes from channel ID {self.quotes_channel_id}')
+                self.person_quotes = PersonQuotes(self.quotes_list, self.quotes_people)
+                await ctx.send(f'Quotes channel set to #{ctx.channel.name}')
+
+            case UpdateSettings.TRUTH_CHANNEL_SET:
+                if self.truth_social_channel_id == ctx.channel.id:
+                    await ctx.send(f'Truth Social channel is already set to #{ctx.channel.name}')
+                    return
+
+                self.truth_social_channel_id = ctx.channel.id
+                path = ServerContext.__get_server_context_path(self.server_id, Contexts.TRUTH_SOCIAL_CHANNEL_ID)
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(str(self.truth_social_channel_id))
+                await ctx.send(f'Truth Social channel set to #{ctx.channel.name}')
+
+            case UpdateSettings.QUOTE_CHANNEL_REMOVE:
+                self.quotes_channel_id = None
+                path = ServerContext.__get_server_context_path(self.server_id, Contexts.QUOTES_CHANNEL_ID)
+                if path.exists():
+                    path.unlink()
+                self.quotes_list = RandomList([])
+                self.person_quotes = PersonQuotes(self.quotes_list, [])
+                await ctx.send('Quotes channel and all associated quotes removed.')
+
+            case UpdateSettings.TRUTH_CHANNEL_REMOVE:
+                self.truth_social_channel_id = None
+                path = ServerContext.__get_server_context_path(self.server_id, Contexts.TRUTH_SOCIAL_CHANNEL_ID)
+                if path.exists():
+                    path.unlink()
+                await ctx.send('Truth Social channel removed.')
 
     server_id: int
     prefix: str
@@ -104,4 +245,4 @@ class ServerContext:
     quotes_people: list[str] = []
     person_quotes: PersonQuotes
     quotes_list: RandomList
-    birthdays: dict[str, str]
+    birthdays: dict[str, datetime]

@@ -4,6 +4,7 @@ from discord.ext import commands
 from polymarket import get_2028_presidential_odds
 from zoneinfo import ZoneInfo
 from birthdays import get_nearest_birthday_str
+from quotes import is_valid_quote
 from random_list import RandomList, load_list
 from time_to import get_time_to_str
 from commands import Commands
@@ -11,11 +12,10 @@ from leafs import get_leafs_drought_str
 from utils import get_main_file_path
 from truth_social import TruthSocialWS
 from server_context import ServerContext
+from prefix import PREFIX
 
 # TODO: This file is a disaster. So much stuff needs to be fixed I'm not
 # even going to bother listing them here. Will do later.
-
-PREFIX = '>'
 
 with open(get_main_file_path().parent / 'version', 'r', encoding='utf-8') as vf:
     VERSION_STR = vf.readline().strip()
@@ -50,12 +50,7 @@ async def on_ready() -> None:
         server_contexts[server_id] = await ServerContext.create(server_id, client)
 
     global truth_social_ws
-    truth_social_channel_ids = [
-        x.truth_social_channel_id
-        for x in server_contexts.values()
-        if x.truth_social_channel_id is not None
-    ]
-    truth_social_ws = TruthSocialWS(client, truth_social_channel_ids)
+    truth_social_ws = TruthSocialWS(client, server_contexts)
 
     global initializing
     initializing = False
@@ -71,12 +66,22 @@ async def help(ctx: discord.ext.commands.Context, *args: str) -> None:
     argument = ''.join(args)
 
     if len(argument) == 0:
-        output = "Below is a list of the valid commands for this bot.\n"
+        output = "**User Commands:**\n"
         output += command_info.help()
+
+        if ctx.author.guild_permissions.administrator:
+            output += "\n\n**Admin Commands:**\n"
+            output += command_info.help_admin()
+
         await ctx.send(output)
         print("Help dialogue sent")
         return
-    elif argument in command_info.commands:
+    elif argument in command_info.commands or argument in command_info.commands_admin:
+        if command_info.is_admin_command(argument) and not ctx.author.guild_permissions.administrator:
+            await ctx.send("You do not have permission to view help for this command.")
+            print(f"Help {argument} denied due to insufficient permissions")
+            return
+
         await ctx.send(f"**{PREFIX}{argument}:** {command_info.help_arg(argument)}")
         print(f"Help {argument} sent")
     else:
@@ -208,21 +213,34 @@ async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
 async def leafs_cmd(ctx: commands.Context) -> None:
     await ctx.send(get_leafs_drought_str())
 
+@client.command(name='settings')
+async def settings(ctx: commands.Context, *args: str) -> None:
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.send("You do not have permission to use this command.")
+        return
+
+    if len(args) == 0:
+        await ctx.send("Missing required arguments. Usage: >settings <setting_type> <value1> ... <valueN>")
+        return
+
+    await server_contexts[ctx.guild.id].update_settings(ctx, *args)
+
 
 @client.event
 async def on_message(message: discord.Message) -> None:
     if message.author == client.user:
         return
     
-    if initializing:
-        await message.channel.send("Bot still initializing...")
-        return
-    
     if message.guild is None:
         return
 
+    if initializing:
+        if message.content.startswith(PREFIX):
+            await message.channel.send("Bot still initializing...")
+        return
+
     server_context = server_contexts[message.guild.id]
-    if message.channel.id == server_context.quotes_channel_id:
+    if is_valid_quote(client, message, server_context.quotes_channel_id):
         quote = (message.content, message.attachments, message.embeds)
         server_context.quotes_list.append(quote)
         server_context.person_quotes.append(quote)
