@@ -2,21 +2,7 @@ from datetime import datetime
 from time_to import get_time_to_str
 
 
-BIRTHDAYS_DICT: dict[str, datetime] = {
-    "Matthew": datetime(2004, 2, 1),
-    "Joseph": datetime(2004, 3, 2),
-    "Lucas": datetime(2003, 4, 8),
-    "Aryan": datetime(2004, 6, 1),
-    "Lian Cheng": datetime(2004, 6, 2),
-    "Emre": datetime(2004, 6, 4),
-    "Evan": datetime(2004, 8, 1),
-    "Evan": datetime(2004, 8, 3),
-    "Jason": datetime(2004, 11, 3),
-    "Eric": datetime(2004, 11, 19),
-}
-
-
-def get_nearest_birthday() -> tuple[str, datetime]:
+def get_nearest_birthday(birthdays: dict[str, datetime]) -> tuple[str, datetime] | None:
     """
     Returns the name and date of the nearest upcoming birthday from today.
 
@@ -25,6 +11,9 @@ def get_nearest_birthday() -> tuple[str, datetime]:
     Returns:
         A tuple containing the name (str) and date (datetime) of the nearest birthday.
     """
+    if len(birthdays) == 0:
+        return None
+
     today = datetime.now()
     current_year = today.year
 
@@ -32,7 +21,7 @@ def get_nearest_birthday() -> tuple[str, datetime]:
     nearest_birthday = None
     min_days_until_birthday = float('inf')
 
-    for name, birthday in BIRTHDAYS_DICT.items():
+    for name, birthday in birthdays.items():
         # Adjust birthday to the current year
         birthday_this_year = birthday.replace(year=current_year)
 
@@ -50,6 +39,8 @@ def get_nearest_birthday() -> tuple[str, datetime]:
     return nearest_name, nearest_birthday
 
 
-def get_nearest_birthday_str() -> str:
-    name, date = get_nearest_birthday()
+def get_nearest_birthday_str(birthdays: dict[str, datetime]) -> str | None:
+    if (result := get_nearest_birthday(birthdays)) is None:
+        return None
+    name, date = result
     return f"{name}'s birthday is in {get_time_to_str((date - datetime.now()).total_seconds())} on {date.strftime('%B %d, %Y')}."

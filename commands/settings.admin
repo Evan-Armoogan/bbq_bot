@@ -1,0 +1,27 @@
+Allows server administrators to update bot metadata.
+The command takes different arguments depending on <setting_type>
+Usage: >settings <setting_type> ...
+<setting_type> = birthday_add:
+    Adds name's birthday with the given date
+    >settings birthday_add <name> <year> <month> <day>
+<setting_type> = birthday_remove
+    Removes name's birthday from the set of birthdays
+    >settings birthday_remove <name>
+<setting_type> = quote_person_add
+    Adds a new person to the stored list of person-specific quotes
+    >settings quote_person_add <name>
+<setting_type> = quote_person_remove
+    Removes the specified person from the list of person-specific quotes (note their quotes remain in the general list).
+    >settings quote_person_remove <name>
+<setting_type> = quote_channel_set
+    Sets the current channel to the channel quotes are retrieved from. This will repopulate the quotes list with new quotes.
+    >settings quote_channel_set
+<setting_type> = quote_channel_remove
+    Removes the current channel as the quotes channel. This will also remove all the quotes stored by the bot.
+    >settings quote_channel_remove
+<setting_type> = truth_channel_set
+    Sets the current channel to be the channel where Truths are reposted.
+    >settings truth_channel_set
+<setting_type> = truth_channel_remove
+    Removes the current channel as the channel where Truths will be reposted. Truths will no longer be reposted in the server.
+    >settings truth_channel_remove

@@ -9,6 +9,7 @@ import aiohttp
 from utils import get_main_file_path
 from discord.ext import commands
 import discord
+from server_context import ServerContext
 
 MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
 
@@ -17,13 +18,16 @@ with open(get_main_file_path().parent / 'synoptic_api_key.secret', 'r', encoding
     API_KEY: str = f.read().strip()
 RECONNECT_DELAY_SEC: int = 1
 
-with open(get_main_file_path().parent / 'truth_social_channel_id.secret', 'r', encoding='utf-8') as f:
-    TRUTH_SOCIAL_CHANNEL_ID: int = int(f.readline().strip())
-
-
 # run_ws_async() from https://synoptic.com/p/streams/01JEYDKB3PH1WJ1BANH2V0H9HP/reader-api
-# with minor modifications
+# with modifications
 class TruthSocialWS:
+    def __init__(self, client: commands.Bot, server_contexts: dict[int, ServerContext]) -> None:
+        self.client = client
+        self.server_contexts = server_contexts
+        thread = threading.Thread(target=self.run_ws, daemon=True)
+        thread.start()
+        print('Truth Social WebSocket thread initialized')
+
     @staticmethod
     def parse_truth_post(message: str) -> tuple[str | None, str | None, str | None]:
         # Extract the link and type lines
@@ -103,34 +107,40 @@ class TruthSocialWS:
         return True, formatted_post, media_links
 
     async def on_truth_social_post(self, post: str, media_links: list[str]) -> None:
-        channel = self.client.get_channel(TRUTH_SOCIAL_CHANNEL_ID)
-        if not channel:
-            print("Truth Social channel not found. Make sure the bot can see it.")
-            return
-        
-        files = []
-        too_large_links = []
+        channel_ids: list[discord.channel.TextChannel] = [
+            x.truth_social_channel_id
+            for x in self.server_contexts.values()
+            if x.truth_social_channel_id is not None
+        ]
+        for channel_id in channel_ids:
+            channel = self.client.get_channel(channel_id)
+            if channel is None:
+                print(f"Channel ID {channel_id} not found.")
+                continue
 
-        async with aiohttp.ClientSession() as session:
-            for url in media_links:
-                try:
-                    async with session.get(url) as resp:
-                        if resp.status == 200:
-                            data = await resp.read()
-                            if len(data) <= MAX_FILE_SIZE:
-                                filename = url.split("/")[-1]
-                                files.append(discord.File(io.BytesIO(data), filename=filename))
+            files = []
+            too_large_links = []
+
+            async with aiohttp.ClientSession() as session:
+                for url in media_links:
+                    try:
+                        async with session.get(url) as resp:
+                            if resp.status == 200:
+                                data = await resp.read()
+                                if len(data) <= MAX_FILE_SIZE:
+                                    filename = url.split("/")[-1]
+                                    files.append(discord.File(io.BytesIO(data), filename=filename))
+                                else:
+                                    too_large_links.append(url)
                             else:
-                                too_large_links.append(url)
-                        else:
-                            print(f"Failed to download: {url} ({resp.status})")
-                except Exception as e:
-                    print(f"Error downloading {url}: {e}")
+                                print(f"Failed to download: {url} ({resp.status})")
+                    except Exception as e:
+                        print(f"Error downloading {url}: {e}")
 
-        if too_large_links:
-            post += "\n".join(f"Too large to attach: {link}" for link in too_large_links)
+            if too_large_links:
+                post += "\n".join(f"Too large to attach: {link}" for link in too_large_links)
 
-        await channel.send(content=post, files=files if files else None)
+            await channel.send(content=post, files=files if files else None)
 
     def schedule_truth_post(self, post: str, media_links: list[str]) -> None:
         try:
@@ -180,10 +190,5 @@ class TruthSocialWS:
                 print(f"Reconnecting in {RECONNECT_DELAY_SEC} seconds...")
                 time.sleep(RECONNECT_DELAY_SEC)
 
-    def __init__(self, client: commands.Bot) -> None:
-        self.client = client
-        thread = threading.Thread(target=self.run_ws, daemon=True)
-        thread.start()
-        print('Truth Social WebSocket thread initialized')
-
     client: commands.Bot
+    server_contexts: dict[int, ServerContext]

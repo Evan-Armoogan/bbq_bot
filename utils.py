@@ -1,4 +1,6 @@
 from pathlib import Path
+from discord.ext import commands
+
 
 def get_main_file_path() -> Path:
     import __main__
