@@ -62,6 +62,20 @@ async def on_ready() -> None:
     initializing = False
 
 
+@client.event
+async def on_guild_join(guild: discord.Guild) -> None:
+    server_contexts[guild.id] = await ServerContext.add_server(guild.id, client)
+    print(f'Joined new server: {guild.name} (ID: {guild.id})')
+
+
+@client.event
+async def on_guild_remove(guild: discord.Guild) -> None:
+    if guild.id in server_contexts:
+        await ServerContext.remove_server(guild.id)
+        del server_contexts[guild.id]
+    print(f'Removed from server: {guild.name} (ID: {guild.id})')
+
+
 def get_datetime_now() -> datetime.datetime:
     return datetime.datetime.now().astimezone(ZoneInfo("America/Toronto"))
 

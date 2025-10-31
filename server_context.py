@@ -121,6 +121,27 @@ class ServerContext:
             quotes = []
 
         return cls(server_id, quotes)
+
+    @classmethod
+    async def add_server(cls, server_id: int, client: commands.Bot) -> 'ServerContext':
+        (SERVER_CONTEXT_PATH / str(server_id)).mkdir(parents=True, exist_ok=True)
+        for context in Contexts:
+            path = cls.__get_server_context_path(server_id, context)
+            with open(path, 'w', encoding='utf-8') as f:
+                if context == Contexts.PREFIX:
+                    f.write(PREFIX)
+                else:
+                    f.write('')
+        return await cls.create(server_id, client)
+
+    @classmethod
+    async def remove_server(cls, server_id: int) -> None:
+        path = SERVER_CONTEXT_PATH / str(server_id)
+        if path.exists() and path.is_dir():
+            for child in path.iterdir():
+                if child.is_file():
+                    child.unlink()
+            path.rmdir()
     
     def rewrite_date_file(self) -> None:
         path = ServerContext.__get_server_context_path(self.server_id, Contexts.BIRTHDAYS)
