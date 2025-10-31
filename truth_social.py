@@ -107,7 +107,7 @@ class TruthSocialWS:
         return True, formatted_post, media_links
 
     async def on_truth_social_post(self, post: str, media_links: list[str]) -> None:
-        channel_ids: list[discord.channel.TextChannel] = [
+        channel_ids = [
             x.truth_social_channel_id
             for x in self.server_contexts.values()
             if x.truth_social_channel_id is not None
