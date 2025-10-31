@@ -6,6 +6,7 @@ from random_list import RandomList
 from quotes import PersonQuotes
 from discord.ext import commands
 from datetime import datetime
+from prefix import PREFIX, VALID_PREFIXES
 
 
 SERVER_CONTEXT_PATH: Path = get_main_file_path().parent / 'server_contexts'
@@ -16,6 +17,7 @@ class Contexts(IntEnum):
     QUOTES_CHANNEL_ID = 2
     QUOTES_PEOPLE = 3
     BIRTHDAYS = 4
+    PREFIX = 5
 
 
 class UpdateSettings(IntEnum):
@@ -27,6 +29,7 @@ class UpdateSettings(IntEnum):
     TRUTH_CHANNEL_SET = 6
     QUOTE_CHANNEL_REMOVE = 7
     TRUTH_CHANNEL_REMOVE = 8
+    PREFIX_UPDATE = 9
 
 
 class ServerContext:
@@ -42,6 +45,8 @@ class ServerContext:
                 path = SERVER_CONTEXT_PATH / str(server_id) / 'quotes_people'
             case Contexts.BIRTHDAYS:
                 path = SERVER_CONTEXT_PATH / str(server_id) / 'birthdays'
+            case Contexts.PREFIX:
+                path = SERVER_CONTEXT_PATH / str(server_id) / 'prefix'
             case _:
                 raise ValueError('Invalid context type')
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -72,7 +77,12 @@ class ServerContext:
 
     def __init__(self, server_id: int, quotes: list[str]) -> None:
         self.server_id = server_id
-        self.prefix = '>'  # TODO: make this configurable per-server
+
+        prefix_file = ServerContext.__read_context_file(self.server_id, Contexts.PREFIX)
+        if len(prefix_file) != 1:
+            self.prefix = PREFIX
+        else:
+            self.prefix = prefix_file
 
         try:
             self.truth_social_channel_id = int(
@@ -146,6 +156,12 @@ class ServerContext:
             attr = name.lower().replace(' ', '_')
             if attr in self.person_quotes.__dict__:
                 delattr(self.person_quotes, attr)
+
+    def update_prefix(self, new_prefix: str) -> None:
+        self.prefix = new_prefix
+        path = ServerContext.__get_server_context_path(self.server_id, Contexts.PREFIX)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(new_prefix)
 
     async def update_settings(self, ctx: commands.Context, *args: str) -> None:
         try:
@@ -237,6 +253,18 @@ class ServerContext:
                 if path.exists():
                     path.unlink()
                 await ctx.send('Truth Social channel removed.')
+            
+            case UpdateSettings.PREFIX_UPDATE:
+                if len(args) != 2:
+                    await ctx.send('Usage: >settings prefix_update <new_prefix>')
+                    return
+                prefix = args[1]
+                if prefix not in VALID_PREFIXES:
+                    await ctx.send(f'Error: Invalid prefix "{prefix}". Valid prefixes are: {", ".join(VALID_PREFIXES)}')
+                    return
+
+                self.update_prefix(prefix)
+                await ctx.send(f'Prefix updated to: {prefix}')
 
     server_id: int
     prefix: str

@@ -24,7 +24,13 @@ with open(get_main_file_path().parent / 'version', 'r', encoding='utf-8') as vf:
 intents = discord.Intents.default()
 intents.message_content = True
 
-client = commands.Bot(PREFIX, intents=intents)
+async def get_prefix(_: commands.Bot, message: discord.Message) -> str:
+    if not message.guild:
+        return 
+
+    return server_contexts[message.guild.id].prefix
+
+client = commands.Bot(command_prefix=get_prefix, intents=intents)
 # Remove the default help command to create a custom one
 client.remove_command('help')
 
