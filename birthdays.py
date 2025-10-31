@@ -1,6 +1,7 @@
 from datetime import datetime
 from time_to import get_time_to_str
 
+# TODO: Refactor this into a class
 
 def get_nearest_birthday(birthdays: dict[str, datetime]) -> tuple[str, datetime] | None:
     """
@@ -39,8 +40,26 @@ def get_nearest_birthday(birthdays: dict[str, datetime]) -> tuple[str, datetime]
     return nearest_name, nearest_birthday
 
 
+def get_birthday_str(name: str, date: datetime) -> str:
+    return f"{name}'s birthday is in {get_time_to_str((date - datetime.now()).total_seconds())} on {date.strftime('%B %d, %Y')}."
+
+
 def get_nearest_birthday_str(birthdays: dict[str, datetime]) -> str | None:
     if (result := get_nearest_birthday(birthdays)) is None:
         return None
     name, date = result
-    return f"{name}'s birthday is in {get_time_to_str((date - datetime.now()).total_seconds())} on {date.strftime('%B %d, %Y')}."
+    return get_birthday_str(name, date)
+
+
+def get_specific_birthday_str(name: str, birthdays: dict[str, datetime]) -> str | None:
+    if name not in birthdays:
+        return None
+    birthday = birthdays[name]
+    today = datetime.now()
+    current_year_birthday = birthday.replace(year=today.year)
+
+    # If birthday has already occurred this year, consider next year's birthday
+    if current_year_birthday < today:
+        current_year_birthday = current_year_birthday.replace(year=today.year + 1)
+
+    return get_birthday_str(name, current_year_birthday)

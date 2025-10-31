@@ -4,6 +4,7 @@ from discord.ext import commands
 import discord
 from prefix import PREFIX
 import re
+from utils import get_pretty_name
 
 
 def is_valid_quote(client: commands.Bot, message: discord.Message, channel_id: int | None) -> bool:
@@ -90,7 +91,7 @@ class PersonQuotes:
 
     def insert_person(self, person: str, quotes_list: RandomList) -> None:
         attr = person.lower().replace(' ', '_')
-        name = ' '.join([a.capitalize() for a in person.replace('_', ' ').split()])
+        name = get_pretty_name(person)
         if attr not in self.__dict__:
             quote_list = RandomList([
                 quote for quote in quotes_list.items
