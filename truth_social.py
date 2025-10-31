@@ -61,13 +61,13 @@ class TruthSocialWS:
         # 1. Extract all account names (with @)
         accounts = re.findall(pattern, message)
 
-        # 2. Build corresponding URLs
-        account_urls = [f"https://truthsocial.com/{username}" for username in accounts]
-
-        # 3. Remove all profile URLs from the text (including surrounding spaces)
+        # 2. Remove all profile URLs from the text (including surrounding spaces)
         cleaned_text = re.sub(r'\s*https://truthsocial\.com/@[A-Za-z0-9_]+\s*', ' ', message).strip()
 
-        return cleaned_text, account_urls
+        # 3. All retruths start with RT
+        cleaned_text = re.sub(r'^\s*RT\s*', '', cleaned_text).strip()
+
+        return cleaned_text, accounts
 
     @staticmethod
     def process_truth_post(message: str) -> tuple[bool, str, list[str]]:
@@ -92,7 +92,6 @@ class TruthSocialWS:
             formatted_post += f'Quoted {quoted}\n{content}\n'
         elif post_type == 'repost':
             content, accounts = TruthSocialWS.parse_retruths(text_or_media)
-            accounts = [f'@{account}' for account in accounts]
             reposted = ', '.join(accounts)
             formatted_post += f'ReTruthed from {reposted}\n{content}\n'
         elif post_type == 'post':
