@@ -25,3 +25,6 @@ Usage: >settings <setting_type> ...
 <setting_type> = truth_channel_remove
     Removes the current channel as the channel where Truths will be reposted. Truths will no longer be reposted in the server.
     >settings truth_channel_remove
+<setting_type> = prefix_update
+    Updates the server prefix to the specified character. Invalid prefixes will be rejected.
+    >settings prefix_update <new_prefix>
