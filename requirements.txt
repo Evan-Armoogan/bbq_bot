@@ -2,3 +2,4 @@ pandas
 discord
 requests
 websocket-client
+aiohttp
