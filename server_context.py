@@ -1,5 +1,5 @@
 from pathlib import Path
-from utils import get_main_file_path
+from utils import get_main_file_path, get_pretty_name
 from quotes import read_all_quotes
 from enum import IntEnum
 from random_list import RandomList
@@ -196,7 +196,7 @@ class ServerContext:
                 if len(args) < 5:
                     await ctx.send('Usage: >settings birthday_add <name> <year> <month> <day>')
                     return
-                name = args[1]
+                name = get_pretty_name(args[1])
                 try:
                     year = int(args[2])
                     month = int(args[3])
@@ -213,7 +213,7 @@ class ServerContext:
                 if len(args) < 2:
                     await ctx.send('Usage: >settings birthday_remove <name>')
                     return
-                name = args[1]
+                name = get_pretty_name(args[1])
                 self.remove_birthday(name)
                 await ctx.send(f'Birthday for {name} removed.')
 
@@ -221,7 +221,7 @@ class ServerContext:
                 if len(args) < 2:
                     await ctx.send('Usage: >settings quote_person_add <name>')
                     return
-                name = args[1]
+                name = get_pretty_name(args[1])
                 self.update_quotes_people(name)
                 await ctx.send(f'Quote person "{name}" added.')
 
@@ -229,7 +229,7 @@ class ServerContext:
                 if len(args) < 2:
                     await ctx.send('Usage: >settings quote_person_remove <name>')
                     return
-                name = args[1]
+                name = get_pretty_name(args[1])
                 self.remove_quotes_people(name)
                 await ctx.send(f'Quote person "{name}" removed.')
 

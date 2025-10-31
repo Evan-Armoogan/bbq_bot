@@ -3,13 +3,13 @@ import discord
 from discord.ext import commands
 from polymarket import get_2028_presidential_odds
 from zoneinfo import ZoneInfo
-from birthdays import get_nearest_birthday_str
+from birthdays import get_nearest_birthday_str, get_specific_birthday_str
 from quotes import is_valid_quote
 from random_list import RandomList, load_list
 from time_to import get_time_to_str
 from commands import Commands
 from leafs import get_leafs_drought_str
-from utils import get_main_file_path
+from utils import get_main_file_path, get_pretty_name
 from truth_social import TruthSocialWS
 from server_context import ServerContext
 from prefix import PREFIX
@@ -144,37 +144,37 @@ def get_time_to_uwaterloo_freedom_str() -> str:
 
 
 @client.command('election')
-async def election(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def election(ctx: commands.Context, *args: str) -> None:
     await ctx.send(get_time_to_election_str())
 
 
 @client.command('inauguration')
-async def inauguration(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def inauguration(ctx: commands.Context, *args: str) -> None:
     await ctx.send(get_time_to_inauguration_str())
 
 
 @client.command('christmas')
-async def christmas(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def christmas(ctx: commands.Context, *args: str) -> None:
     await ctx.send(get_time_to_christmas_str())
 
 
 @client.command('feliz_navidad')
-async def feliz_navidad(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def feliz_navidad(ctx: commands.Context, *args: str) -> None:
     await ctx.send(f'{get_time_to_christmas_str()}\nhttps://www.youtube.com/watch?v=5oyd5mR6cCY')
 
 
 @client.command('illegals')
-async def illegals(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def illegals(ctx: commands.Context, *args: str) -> None:
     await ctx.send(f'{get_time_to_christmas_str()}\nhttps://www.youtube.com/watch?v=ZblXxiPA7d8')
 
 
 @client.command('freedom')
-async def freedom(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def freedom(ctx: commands.Context, *args: str) -> None:
     await ctx.send(get_time_to_uwaterloo_freedom_str())
 
 
 @client.command('polymarket')
-async def polymarket(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def polymarket(ctx: commands.Context, *args: str) -> None:
     line = ""
     for name, percentage in get_2028_presidential_odds():
         line += f"{name}: {percentage}%\n"
@@ -185,21 +185,28 @@ async def polymarket(ctx: discord.ext.commands.Context, *args: str) -> None:
 
 
 @client.command('penis')
-async def penis(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def penis(ctx: commands.Context, *args: str) -> None:
     await ctx.send("Bruh. That's a Joseph moment.")
 
 
 @client.command('joseph')
-async def joseph(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def joseph(ctx: commands.Context, *args: str) -> None:
     await ctx.send('```Kamala Harris crashed into me\n-Joseph [9/13/24]```')
 
 
 @client.command('birthday')
-async def birthday(ctx: discord.ext.commands.Context, *args: str) -> None:
-    if (birthday := get_nearest_birthday_str(server_contexts[ctx.guild.id].birthdays)) is None:
-        await ctx.send('No birthdays found')
+async def birthday(ctx: commands.Context, *args: str) -> None:
+    if len(args) > 0:
+        name = get_pretty_name(args[0])
+        if (birthday := get_specific_birthday_str(name, server_contexts[ctx.guild.id].birthdays)) is not None:
+            await ctx.send(birthday)
+        else:
+            await ctx.send(f'Birthday for {name} not found')
     else:
-        await ctx.send(birthday)
+        if (birthday := get_nearest_birthday_str(server_contexts[ctx.guild.id].birthdays)) is None:
+            await ctx.send('No birthdays found')
+        else:
+            await ctx.send(birthday)
 
 
 charlie_kirk_vids: RandomList = load_list(get_main_file_path().parent / 'charlie_kirk_vids.txt')
@@ -209,7 +216,7 @@ async def charlie_kirk(ctx: discord.ext.commands.Context, *args: str) -> None:
 
 
 @client.command('quote')
-async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
+async def quote(ctx: commands.Context, *args: str) -> None:
     person_quotes = server_contexts[ctx.guild.id].person_quotes
     quotes_list = server_contexts[ctx.guild.id].quotes_list
 
@@ -232,6 +239,7 @@ async def quote(ctx: discord.ext.commands.Context, *args: str) -> None:
 @client.command(name='leafs')
 async def leafs_cmd(ctx: commands.Context) -> None:
     await ctx.send(get_leafs_drought_str())
+
 
 @client.command(name='settings')
 async def settings(ctx: commands.Context, *args: str) -> None:
@@ -269,7 +277,7 @@ async def on_message(message: discord.Message) -> None:
 
 
 @client.event
-async def on_command_error(ctx: discord.ext.commands.Context, error: Exception) -> None:
+async def on_command_error(ctx: commands.Context, error: Exception) -> None:
     for item in command_info.commands:
         if ctx.message.content.startswith(str(client.command_prefix) + item):
             output = 'Invalid argument for command: {0}. For help using this command, type "{1}help {0}"'.format(
