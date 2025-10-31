@@ -3,6 +3,7 @@ from typing import Any
 from discord.ext import commands
 import discord
 from prefix import PREFIX
+import re
 
 
 def is_valid_quote(client: commands.Bot, message: discord.Message, channel_id: int | None) -> bool:
@@ -48,10 +49,24 @@ async def read_all_quotes(client: commands.Bot, server_id: int, channel_id: int)
 
 class PersonQuotes:
     @staticmethod
-    def __name_in_str(name: str, quote: str) -> str:
-        return (f'{name}:' in quote or
-                f'-{name}' in quote or
-                f'- {name}' in quote)
+    def __name_in_str(name: str, quote: str) -> bool:
+        """
+        Return True if `name` appears outside of quotation marks in `quote`.
+        Handles ASCII quotes and Unicode quotes (“ ” ‘ ’).
+        """
+        # All common quote characters
+        quote_chars = r'"\'“”‘’'
+        
+        # Split by any of these quotes
+        parts = re.split(f"[{quote_chars}]", quote)
+        
+        # Even indices are outside quotes
+        for i, part in enumerate(parts):
+            if i % 2 == 0:  # outside quotes
+                # Optional: word boundary to avoid partial matches
+                if re.search(rf'\b{re.escape(name)}\b', part):
+                    return True
+        return False
 
     def __init__(self, all_quotes: RandomList, people: list[str]) -> None:
         attr = [name.lower().replace(' ', '_') for name in people]
